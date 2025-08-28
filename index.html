@@ -1,203 +1,679 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOVE TANG🤎🐖</title>
+    <title>ESP32-CAM Live Stream & Motor Control</title>
     <style>
-        /* CSS Styles */
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background-color: pink; /* สีชมพู */
-            overflow: hidden; /* ป้องกันการเลื่อนหน้าจอ */
+            box-sizing: border-box;
         }
-
-        .wrapper {
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 1100px;
             width: 100%;
-            height: 100vh;
-            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
             text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .config-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .config-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #495057;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        input[type="text"], input[type="number"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffd43b, #fcc419);
+            color: #333;
+        }
+        
+        .btn-info {
+            background: linear-gradient(45deg, #74c0fc, #339af0);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .video-container {
+            text-align: center;
+            margin-top: 30px;
+            position: relative;
+        }
+        
+        #streamImage {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+            background: #f8f9fa;
+            border: 3px solid #dee2e6;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .status.success {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            color: white;
+        }
+        
+        .status.error {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .status.info {
+            background: linear-gradient(45deg, #74c0fc, #339af0);
+            color: white;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .controls {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .quality-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        /* Motor Control Section */
+        .motor-control-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .motor-control, .servo-control {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .servo-box {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f1f3f5;
+        }
+        
+        .servo-box:last-child {
+            margin-bottom: 0;
+        }
+        
+        .status-display {
+            margin: 10px 0;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .speed-control {
             display: flex;
             align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background-color: pink; /* สีชมพู */
+            justify-content: space-between;
+            margin: 15px 0;
         }
-
-        .inner {
-            --w: 100px;
-            --h: 150px;
-            --translateZ: calc((var(--w) + var(--h)) + 0px);
-            --rotateX: -15deg;
-            --perspective: 1000px;
-            position: absolute;
-            width: var(--w);
-            height: var(--h);
-            top: 25%;
-            left: calc(50% - (var(--w) / 2) - 2.5px);
-            z-index: 2;
-            transform-style: preserve-3d;
-            transform: perspective(var(--perspective));
-            animation: rotating 20s linear infinite;
+        
+        .speed-value {
+            font-weight: bold;
+            color: #495057;
+            min-width: 80px;
+            text-align: center;
         }
-
-        @keyframes rotating {
-            from {
-                transform: perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(0);
+        
+        @media (max-width: 968px) {
+            .config-grid {
+                grid-template-columns: 1fr;
             }
-            to {
-                transform: perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(1turn);
+            
+            .control-panel {
+                grid-template-columns: 1fr;
             }
         }
-
-        .inner.paused {
-            animation-play-state: paused;
-        }
-
-        .card {
-            position: absolute;
-            border: 2px solid rgba(var(--color-card));
-            border-radius: 12px;
-            overflow: hidden;
-            inset: 0;
-            transform: rotateY(calc((360deg / var(--quantity)) * var(--index))) translateZ(var(--translateZ));
-            transition: transform 0.5s ease-in-out, scale 0.5s ease-in-out;
-        }
-
-        .card:hover {
-            transform: rotateY(calc((360deg / var(--quantity)) * var(--index))) translateZ(calc(var(--translateZ) * 1.5)) scale(1.2);
-            z-index: 3; /* ให้รูปที่ขยายอยู่ด้านบน */
-        }
-
-        .img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background-image: var(--img-url);
-            background-size: cover;
-            background-position: center;
-        }
-
-        /* CSS สำหรับหัวใจตก */
-        .heart {
-            position: absolute;
-            top: -10%;
-            z-index: 1;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(110vh);
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            label {
+                min-width: auto;
+                margin-bottom: 5px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                min-width: auto;
             }
         }
     </style>
 </head>
 <body>
-    <div class="wrapper">
-        <div class="inner" style="--quantity: 10;">
-            <div class="card" style="--index: 0; --color-card: 142, 249, 252; --img-url: url('รูป/TANG.jpg');">
-                <div class="img"></div>
+    <div class="container">
+        <h1>📹 ESP32-CAM Live Stream & Motor Control</h1>
+        
+        <div class="config-section">
+            <div class="config-grid">
+                <div class="config-box">
+                    <div class="config-title">ESP32-CAM Configuration</div>
+                    <div class="input-group">
+                        <label for="camIpAddress">CAM IP Address:</label>
+                        <input type="text" id="camIpAddress" placeholder="192.168.1.100" value="">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="camPort">CAM Port:</label>
+                        <input type="number" id="camPort" placeholder="80" value="80" min="1" max="65535">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="startStream()">🎥 เริ่ม Live Stream</button>
+                        <button class="btn-secondary" onclick="captureImage()">📸 ถ่ายรูป</button>
+                        <button class="btn-danger" onclick="stopStream()">⏹️ หยุด Stream</button>
+                    </div>
+                </div>
+                
+                <div class="config-box">
+                    <div class="config-title">Motor Controller Configuration</div>
+                    <div class="input-group">
+                        <label for="motorIpAddress">Motor IP Address:</label>
+                        <input type="text" id="motorIpAddress" placeholder="192.168.1.101" value="">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="motorPort">Motor Port:</label>
+                        <input type="number" id="motorPort" placeholder="80" value="80" min="1" max="65535">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-info" onclick="testMotorConnection()">🔗 ทดสอบการเชื่อมต่อ</button>
+                    </div>
+                </div>
             </div>
-            <div class="card" style="--index: 1; --color-card: 142, 252, 204; --img-url: url('รูป/TEAM.jpg');">
-                <div class="img"></div>
+        </div>
+        
+        <div id="status" class="status info">
+            พร้อมเชื่อมต่อ - กรุณาใส่ IP Address ของ ESP32-CAM และ Motor Controller
+        </div>
+        
+        <div class="video-container">
+            <img id="streamImage" alt="ESP32-CAM Stream">
+            <div class="controls" id="controls">
+                <div class="quality-info">
+                    <strong>คุณภาพ:</strong> SVGA (800x600) | <strong>ความเร็ว:</strong> ~10 FPS
+                </div>
             </div>
-            <div class="card" style="--index: 2; --color-card: 142, 252, 157; --img-url: url('รูป/2กินย่างเนย.jpg');">
-                <div class="img"></div>
+        </div>
+        
+        <!-- Motor Control Section -->
+        <div class="motor-control-section">
+            <h2 style="text-align: center; margin-bottom: 20px;">🎮 ควบคุมมอเตอร์และเซอร์โว</h2>
+            
+            <div class="control-panel">
+                <div class="motor-control">
+                    <h3>ควบคุม Stepper Motor</h3>
+                    <div class="button-group">
+                        <button class="btn-success" onclick="sendMotorCommand('/motor/on')">เริ่มทำงาน</button>
+                        <button class="btn-danger" onclick="sendMotorCommand('/motor/off')">หยุดทำงาน</button>
+                    </div>
+                    
+                    <div class="status-display">
+                        สถานะมอเตอร์: <span id="motor-status">ไม่ทราบสถานะ</span>
+                    </div>
+                    
+                    <div class="speed-control">
+                        <button class="btn-info" onclick="sendMotorCommand('/speed/down')">ลดความเร็ว</button>
+                        <div class="speed-value">
+                            ความเร็ว: <span id="speed-value">1000</span> µs
+                        </div>
+                        <button class="btn-info" onclick="sendMotorCommand('/speed/up')">เพิ่มความเร็ว</button>
+                    </div>
+                </div>
+                
+                <div class="servo-control">
+                    <h3>ควบคุมเซอร์โว</h3>
+                    
+                    <div class="servo-box">
+                        <h4>เซอร์โว 1</h4>
+                        <div class="button-group">
+                            <button class="btn-warning" onclick="sendMotorCommand('/servo1/on')">เปิด</button>
+                            <button class="btn-warning" onclick="sendMotorCommand('/servo1/off')">ปิด</button>
+                        </div>
+                        <div class="status-display">
+                            สถานะ: <span id="servo1-status">ไม่ทราบสถานะ</span>
+                        </div>
+                    </div>
+                    
+                    <div class="servo-box">
+                        <h4>เซอร์โว 2</h4>
+                        <div class="button-group">
+                            <button class="btn-warning" onclick="sendMotorCommand('/servo2/on')">เปิด</button>
+                            <button class="btn-warning" onclick="sendMotorCommand('/servo2/off')">ปิด</button>
+                        </div>
+                        <div class="status-display">
+                            สถานะ: <span id="servo2-status">ไม่ทราบสถานะ</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card" style="--index: 3; --color-card: 215, 252, 142; --img-url: url('รูป/TANGกินข้าว.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 4; --color-card: 252, 252, 142; --img-url: url('รูป/ขี่รถ.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 5; --color-card: 252, 208, 142; --img-url: url('รูป/ถ่ายหัว.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 6; --color-card: 252, 142, 142; --img-url: url('รูป/ยิงปืน.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 7; --color-card: 252, 142, 239; --img-url: url('รูป/หัวใจ.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 8; --color-card: 204, 142, 252; --img-url: url('รูป/ถ่ายหัว2.jpg');">
-                <div class="img"></div>
-            </div>
-            <div class="card" style="--index: 9; --color-card: 142, 202, 252; --img-url: url('รูป/2นิ้ว.jpg');">
-                <div class="img"></div>
+            
+            <div id="motor-status-message" class="status info" style="margin-top: 20px;">
+                พร้อมส่งคำสั่งควบคุม
             </div>
         </div>
     </div>
 
     <script>
-        const inner = document.querySelector('.inner');
-        const cards = document.querySelectorAll('.card');
-        const quantity = parseInt(inner.style.getPropertyValue('--quantity')); // จำนวนรูป
-        const angle = 360 / quantity; // มุมระหว่างรูปแต่ละรูป
-
-        let isPaused = false;
-        let currentRotation = 0;
-
-        // ฟังก์ชันคำนวณมุมการหมุน
-        function calculateRotation() {
-            const computedStyle = window.getComputedStyle(inner);
-            const matrix = computedStyle.transform;
-            if (matrix === 'none') return 0;
-
-            const values = matrix.split('(')[1].split(')')[0].split(',');
-            const a = values[0];
-            const b = values[1];
-            const angleRad = Math.atan2(b, a);
-            let angleDeg = (angleRad * 180) / Math.PI;
-            if (angleDeg < 0) angleDeg += 360;
-
-            return angleDeg;
+        let streamImg = document.getElementById('streamImage');
+        let statusDiv = document.getElementById('status');
+        let controls = document.getElementById('controls');
+        let isStreaming = false;
+        let motorStatus = document.getElementById('motor-status');
+        let speedValue = document.getElementById('speed-value');
+        let servo1Status = document.getElementById('servo1-status');
+        let servo2Status = document.getElementById('servo2-status');
+        let motorStatusMessage = document.getElementById('motor-status-message');
+        
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
         }
-
-        // หยุดหมุนและปรับตำแหน่งรูปให้มาอยู่ตรงกลาง
-        inner.addEventListener('mouseenter', () => {
-            isPaused = true;
-            inner.classList.add('paused');
-
-            // คำนวณมุมการหมุนปัจจุบัน
-            currentRotation = calculateRotation();
-
-            // หารูปที่อยู่ใกล้กับตำแหน่งตรงกลางที่สุด
-            const closestIndex = Math.round((currentRotation % 360) / angle);
-            const targetRotation = closestIndex * angle;
-
-            // ปรับการหมุนให้รูปที่เลือกมาอยู่ตรงกลาง
-            inner.style.transform = `perspective(1000px) rotateX(-15deg) rotateY(${targetRotation}deg)`;
-        });
-
-        // เริ่มหมุนต่อเมื่อนำเมาส์ออก
-        inner.addEventListener('mouseleave', () => {
-            isPaused = false;
-            inner.classList.remove('paused');
-            inner.style.transform = `perspective(1000px) rotateX(-15deg) rotateY(${currentRotation}deg)`;
-            inner.style.animationPlayState = 'running';
-        });
-
-        // ฟังก์ชันสร้างหัวใจตกแบบสุ่ม
-        function createHeart() {
-            const heart = document.createElement("div");
-            heart.classList.add("heart");
-            heart.innerHTML = "💖"; // ใช้ Emoji รูปหัวใจสีชมพู
-            document.body.appendChild(heart);
-
-            // กำหนดตำแหน่งและขนาดแบบสุ่ม
-            heart.style.left = Math.random() * 100 + "vw"; // ตำแหน่งแนวนอนแบบสุ่ม
-            heart.style.fontSize = Math.random() * 20 + 10 + "px"; // ขนาด 10px - 30px
-            heart.style.animationDuration = Math.random() * 3 + 2 + "s"; // ความเร็ว 2s - 5s
-
-            setTimeout(() => {
-                heart.remove(); // ลบหัวใจหลังจากตกถึงพื้น
-            }, 5000);
+        
+        function updateMotorStatus(message, type) {
+            motorStatusMessage.textContent = message;
+            motorStatusMessage.className = `status ${type}`;
         }
-
-        // สร้างหัวใจทุก 300 มิลลิวินาที
-        setInterval(createHeart, 300);
+        
+        function getCamBaseUrl() {
+            const ip = document.getElementById('camIpAddress').value.trim();
+            const port = document.getElementById('camPort').value.trim() || '80';
+            
+            if (!ip) {
+                updateStatus('❌ กรุณาใส่ IP Address ของ ESP32-CAM', 'error');
+                return null;
+            }
+            
+            return `http://${ip}:${port}`;
+        }
+        
+        function getMotorBaseUrl() {
+            const ip = document.getElementById('motorIpAddress').value.trim();
+            const port = document.getElementById('motorPort').value.trim() || '80';
+            
+            if (!ip) {
+                updateMotorStatus('❌ กรุณาใส่ IP Address ของ Motor Controller', 'error');
+                return null;
+            }
+            
+            return `http://${ip}:${port}`;
+        }
+        
+        function startStream() {
+            const baseUrl = getCamBaseUrl();
+            if (!baseUrl) return;
+            
+            updateStatus('🔄 กำลังเชื่อมต่อ Live Stream...', 'info');
+            statusDiv.innerHTML = '<div class="loading"></div>กำลังเชื่อมต่อ Live Stream...';
+            
+            streamImg.onload = function() {
+                updateStatus('✅ Live Stream เชื่อมต่อสำเร็จ!', 'success');
+                streamImg.style.display = 'block';
+                controls.style.display = 'block';
+                isStreaming = true;
+            };
+            
+            streamImg.onerror = function() {
+                updateStatus('❌ ไม่สามารถเชื่อมต่อได้ - ตรวจสอบ IP Address และการเชื่อมต่อ', 'error');
+                streamImg.style.display = 'none';
+                controls.style.display = 'none';
+                isStreaming = false;
+            };
+            
+            // เพิ่ม timestamp เพื่อหลีกเลี่ยง cache
+            streamImg.src = `${baseUrl}/stream?t=${Date.now()}`;
+        }
+        
+        function stopStream() {
+            streamImg.src = '';
+            streamImg.style.display = 'none';
+            controls.style.display = 'none';
+            updateStatus('⏹️ หยุด Live Stream แล้ว', 'info');
+            isStreaming = false;
+        }
+        
+        function captureImage() {
+            const baseUrl = getCamBaseUrl();
+            if (!baseUrl) return;
+            
+            updateStatus('📸 กำลังถ่ายรูป...', 'info');
+            
+            // สร้าง temporary image element เพื่อ capture
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                // สร้าง link สำหรับดาวน์โหลด
+                const link = document.createElement('a');
+                link.href = tempImg.src;
+                link.download = `ESP32CAM_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                updateStatus('✅ ถ่ายรูปสำเร็จ!', 'success');
+                
+                // กลับไปแสดง status เดิมหลังจาก 3 วินาที
+                setTimeout(() => {
+                    if (isStreaming) {
+                        updateStatus('✅ Live Stream เชื่อมต่อสำเร็จ!', 'success');
+                    } else {
+                        updateStatus('พร้อมเชื่อมต่อ - กรุณาใส่ IP Address ของ ESP32-CAM', 'info');
+                    }
+                }, 3000);
+            };
+            
+            tempImg.onerror = function() {
+                updateStatus('❌ ถ่ายรูปไม่สำเร็จ - ตรวจสอบการเชื่อมต่อ', 'error');
+            };
+            
+            tempImg.src = `${baseUrl}/capture?t=${Date.now()}`;
+        }
+        
+        // ฟังก์ชันทดสอบการเชื่อมต่อกับ Motor Controller
+        function testMotorConnection() {
+            const baseUrl = getMotorBaseUrl();
+            if (!baseUrl) return;
+            
+            updateMotorStatus('🔄 กำลังทดสอบการเชื่อมต่อ...', 'info');
+            
+            fetch(`${baseUrl}/`, { method: 'GET', timeout: 5000 })
+                .then(response => {
+                    if (response.ok) {
+                        updateMotorStatus('✅ การเชื่อมต่อ Motor Controller สำเร็จ!', 'success');
+                    } else {
+                        updateMotorStatus('⚠️ การเชื่อมต่อสำเร็จแต่เซิร์ฟเวอร์รายงานปัญหา', 'error');
+                    }
+                })
+                .catch(error => {
+                    updateMotorStatus('❌ ไม่สามารถเชื่อมต่อกับ Motor Controller: ' + error, 'error');
+                });
+        }
+        
+        // ฟังก์ชันส่งคำสั่งควบคุมมอเตอร์และเซอร์โว
+        function sendMotorCommand(endpoint) {
+            const baseUrl = getMotorBaseUrl();
+            if (!baseUrl) return;
+            
+            updateMotorStatus('🔄 กำลังส่งคำสั่ง...', 'info');
+            
+            fetch(`${baseUrl}${endpoint}`)
+                .then(response => response.text())
+                .then(data => {
+                    updateMotorStatus('✅ ' + data, 'success');
+                    
+                    // อัพเดทสถานะต่างๆ ตามคำตอบจาก ESP32
+                    if (data.includes("Stepper Motor ON")) {
+                        motorStatus.textContent = "กำลังทำงาน";
+                    } else if (data.includes("Stepper Motor OFF")) {
+                        motorStatus.textContent = "หยุดทำงาน";
+                    }
+                    
+                    if (data.includes("Speed")) {
+                        const speedMatch = data.match(/\d+/);
+                        if (speedMatch) {
+                            speedValue.textContent = speedMatch[0];
+                        }
+                    }
+                    
+                    if (data.includes("Servo1 ON")) {
+                        servo1Status.textContent = "เปิด";
+                    } else if (data.includes("Servo1 OFF")) {
+                        servo1Status.textContent = "ปิด";
+                    }
+                    
+                    if (data.includes("Servo2 ON")) {
+                        servo2Status.textContent = "เปิด";
+                    } else if (data.includes("Servo2 OFF")) {
+                        servo2Status.textContent = "ปิด";
+                    }
+                })
+                .catch(error => {
+                    updateMotorStatus('❌ ไม่สามารถส่งคำสั่งได้: ' + error, 'error');
+                });
+        }
+        
+        // Auto-detect IP (ถ้าอยู่ใน network เดียวกัน)
+        function detectIP() {
+            const currentUrl = window.location.hostname;
+            if (currentUrl !== 'localhost' && currentUrl !== '127.0.0.1' && currentUrl !== '') {
+                // ถ้าเปิดจาก network แล้ว อาจจะลองเดา IP range
+                const parts = currentUrl.split('.');
+                if (parts.length === 4) {
+                    const baseIP = parts.slice(0, 3).join('.');
+                    document.getElementById('camIpAddress').placeholder = `${baseIP}.100 (ตัวอย่าง)`;
+                    document.getElementById('motorIpAddress').placeholder = `${baseIP}.101 (ตัวอย่าง)`;
+                }
+            }
+        }
+        
+        // เรียกใช้เมื่อโหลดหน้า
+        window.onload = function() {
+            detectIP();
+            
+            // ตรวจสอบว่ามี IP ที่บันทึกไว้หรือไม่
+            const savedCamIP = localStorage.getItem('esp32cam_ip');
+            const savedMotorIP = localStorage.getItem('esp32motor_ip');
+            
+            if (savedCamIP) {
+                document.getElementById('camIpAddress').value = savedCamIP;
+            }
+            
+            if (savedMotorIP) {
+                document.getElementById('motorIpAddress').value = savedMotorIP;
+            }
+        };
+        
+        // บันทึก IP เมื่อพิมพ์
+        document.getElementById('camIpAddress').addEventListener('input', function() {
+            localStorage.setItem('esp32cam_ip', this.value);
+        });
+        
+        document.getElementById('motorIpAddress').addEventListener('input', function() {
+            localStorage.setItem('esp32motor_ip', this.value);
+        });
+        
+        // Enter key สำหรับเริ่ม stream
+        document.getElementById('camIpAddress').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startStream();
+            }
+        });
+        
+        document.getElementById('camPort').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startStream();
+            }
+        });
+        
+        document.getElementById('motorIpAddress').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testMotorConnection();
+            }
+        });
     </script>
 </body>
 </html>
